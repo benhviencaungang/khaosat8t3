@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Báo Cáo Nhanh - BVĐK KV Cầu Ngang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- CẤU HÌNH IN ẤN (ĐÃ CẬP NHẬT LỀ 7mm) --- */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 7mm !important;
+            }
+
+            .no-print,
+            nav,
+            button {
+                display: none !important;
+            }
+
+            main.hidden {
+                display: none !important;
+            }
+
+            main:not(.hidden) {
+                display: block !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .show-on-print {
+                display: block !important;
+            }
+
+            span.show-on-print {
+                display: inline !important;
+            }
+
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 7.5pt !important;
+                width: 100%;
+                height: 100%;
+            }
+
+            .container-main {
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+
+            .print-header-container {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                margin-bottom: 2mm !important;
+                width: 100% !important;
+            }
+
+            .print-header-left {
+                text-align: center !important;
+            }
+
+            .print-header-right {
+                text-align: center !important;
+            }
+
+            h1 {
+                font-size: 9pt !important;
+                margin: 0 !important;
+            }
+
+            h2 {
+                font-size: 13pt !important;
+                margin: 1mm 0 1mm 0 !important;
+                line-height: 1.1 !important;
+            }
+
+            p {
+                margin: 1px 0 !important;
+            }
+
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-bottom: 2mm !important;
+            }
+
+            th,
+            td {
+                border: 1px solid #000 !important;
+                padding: 1px 2px !important;
+                font-size: 7pt !important;
+                line-height: 1.1 !important;
+            }
+
+            th:nth-child(1),
+            td:nth-child(1) {
+                width: 22px !important;
+            }
+
+            th:nth-child(2),
+            td:nth-child(2) {
+                width: 130px !important;
+            }
+
+            input,
+            .admin-editable {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+                font-weight: bold !important;
+                font-size: 7.5pt !important;
+                text-align: center !important;
+                color: #000 !important;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+
+            .print-grid-cols-2 {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 5mm !important;
+                margin-top: 1mm !important;
+            }
+
+            /* --- CẬP NHẬT CSS CHO CHỮ KÝ TO HƠN --- */
+            .signature-section {
+                margin-top: 5mm !important;
+                page-break-inside: avoid !important;
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                font-size: 11pt !important; /* Tăng size chữ tiêu đề */
+            }
+
+            .signature-space {
+                height: 3.5cm !important;
+                display: block !important;
+            }
+
+            /* Tên người ký to và đậm hơn */
+            .signature-name {
+                font-size: 14pt !important; 
+                font-weight: 900 !important;
+                text-transform: uppercase !important;
+                display: block !important;
+                width: 100% !important;
+            }
+
+            .bg-indigo-50,
+            .bg-indigo-100,
+            .bg-red-50,
+            .bg-slate-50,
+            .bg-slate-200 {
+                background-color: transparent !important;
+            }
+
+            input[readonly] {
+                font-weight: 900 !important;
+            }
+        }
+
+        /* --- STYLE MÀN HÌNH THƯỜNG --- */
+        .indent-item {
+            padding-left: 15px !important;
+            font-style: italic;
+            color: #4b5563;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        .input-focus:focus {
+            background-color: #eff6ff;
+            outline: 2px solid #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .admin-editable {
+            background-color: #fff !important;
+            border: 1px solid #bfdbfe !important;
+            color: #1e40af !important;
+            font-weight: 800 !important;
+        }
+
+        .input-readonly-custom {
+            background-color: #e2e8f0;
+            /* slate-200 */
+            color: #475569;
+            /* slate-600 */
+            cursor: not-allowed;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen text-slate-900">
+
+    <!-- NAVIGATION BAR -->
+    <nav class="no-print bg-indigo-900 text-white shadow-lg sticky top-0 z-[100]">
+        <div class="max-w-[1400px] mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-1.5 rounded-lg shadow-inner">
+                    <i class="fa-solid fa-hospital text-indigo-900 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-extrabold uppercase tracking-tight">BVĐK KV Cầu Ngang</h1>
+                    <p class="text-[10px] text-indigo-200 uppercase font-bold">Hệ thống báo cáo nhanh 24h</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="switchView('report')" id="nav-report"
+                    class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-800 border-b-2 border-white transition-all text-white"><i
+                        class="fa-solid fa-pen-to-square mr-1.5"></i> LẬP BÁO CÁO</button>
+                <button onclick="switchView('admin')" id="nav-history"
+                    class="px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-800 transition-all text-indigo-100"><i
+                        class="fa-solid fa-database mr-1.5"></i> XEM LẠI DỮ LIỆU</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MÀN HÌNH CHÍNH: LẬP BÁO CÁO -->
+    <main id="view-report" class="max-w-[1250px] mx-auto p-4 md:p-6 print:p-0 print:m-0">
+        <div class="bg-white shadow-2xl rounded-2xl border border-slate-200 overflow-hidden container-main">
+            <!-- Header Báo Cáo (Cấu trúc mới: Grid 2 cột) -->
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50 print:p-0 print:border-none print:bg-white">
+
+                <!-- Container cho Header khi in -->
+                <div
+                    class="print-header-container flex flex-col md:flex-row justify-between items-start gap-4 mb-4 print:mb-1 print:gap-0">
+
+                    <!-- Cột Trái: Sở -> BV -> Đơn vị (Nằm dưới và căn giữa) -->
+                    <div class="text-center md:text-left print-header-left w-full md:w-auto">
+                        <p class="font-bold text-[10px] uppercase text-slate-500 print:text-black">SỞ Y TẾ VĨNH LONG</p>
+                        <p
+                            class="font-extrabold text-[12px] border-b-2 border-slate-900 pb-0.5 uppercase inline-block print:text-[10pt] print:border-black">
+                            BVĐK KHU VỰC CẦU NGANG</p>
+
+                        <!-- ĐƠN VỊ: Luôn hiển thị, căn giữa dưới tên BV khi in -->
+                        <div
+                            class="mt-2 print:mt-1 font-bold text-[10px] uppercase print:text-black text-blue-800 flex justify-center md:justify-start print:justify-center items-center">
+                            <span class="mr-1">ĐƠN VỊ:</span>
+                            <!-- Label hiển thị khi in -->
+                            <span id="printDepartment" class="hidden show-on-print">...</span>
+                            <!-- Select hiển thị trên màn hình -->
+                            <select id="department" onchange="syncDepartment(); fetchPrevDataSummary();"
+                                class="no-print bg-white border border-slate-200 rounded px-2 py-0.5 outline-none cursor-pointer"></select>
+                        </div>
+                    </div>
+
+                    <!-- Cột Phải: Quốc hiệu -> Tiêu ngữ -> Ngày tháng -->
+                    <div class="text-center print-header-right w-full md:w-auto">
+                        <p class="font-extrabold text-[11px] uppercase tracking-wide text-nowrap print:text-[10pt]">CỘNG
+                            HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                        <p
+                            class="font-bold border-b border-slate-800 pb-0.5 inline-block text-[10px] print:text-[9pt] print:border-black">
+                            Độc lập - Tự do - Hạnh phúc</p>
+                        <p class="italic pt-2 text-[9px] font-medium text-slate-600 print:text-black print:pt-1"
+                            id="currentDateString">...</p>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 print:mt-1">
+                    <h2
+                        class="text-indigo-950 uppercase font-extrabold text-2xl print:text-lg tracking-tight print:text-black">
+                        BÁO CÁO NHANH TRỰC TUYẾN</h2>
+                    <p id="reportPeriodText"
+                        class="text-[11px] text-slate-700 font-bold italic mt-1 leading-relaxed whitespace-pre-line print:text-black print:text-[9pt]">
+                    </p>
+                    <div class="flex flex-wrap justify-center items-center gap-4 mt-5 no-print">
+                        <div class="bg-white border border-blue-100 p-2 rounded-xl shadow-sm flex items-center gap-3">
+                            <span class="text-[10px] font-black text-slate-400 uppercase ml-2">Ngày báo cáo:</span>
+                            <input type="date" id="reportDate" onchange="updateDateString(); fetchPrevDataSummary();"
+                                class="border-none font-extrabold text-blue-700 text-sm outline-none bg-blue-50/50 rounded-lg px-3 py-1.5 focus:ring-2 ring-blue-500/20">
+                        </div>
+                        <div id="prev-day-summary"
+                            class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span id="prev-summary-text">Đang tải dữ liệu BN cũ...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table 1 -->
+            <div class="px-6 py-4 overflow-x-auto print:px-0 print:py-0">
+                <table
+                    class="w-full text-center text-[10px] border-collapse border border-slate-300 shadow-sm print:text-[8px] print:shadow-none print:border-black">
+                    <thead class="bg-slate-100 font-bold text-slate-700 print:bg-white print:text-black">
+                        <tr>
+                            <th rowspan="3"
+                                class="w-8 border border-slate-300 bg-slate-200/50 print:bg-white print:border-black">TT
+                            </th>
+                            <th rowspan="3"
+                                class="min-w-[180px] border border-slate-300 bg-slate-200/50 print:bg-white print:border-black">
+                                CHỈ TIÊU KHÁM,
+                                CẤP CỨU</th>
+                            <th
+                                class="border border-slate-300 bg-indigo-50 text-indigo-900 print:bg-white print:text-black print:border-black">
+                                BN CŨ</th>
+                            <th colspan="2" class="border border-slate-300 print:border-black">KHÁM BỆNH</th>
+                            <th class="border border-slate-300 print:border-black">VÀO VIỆN</th>
+                            <th colspan="2" class="border border-slate-300 print:border-black">CHUYỂN TUYẾN</th>
+                            <th colspan="2" class="border border-slate-300 print:border-black">RA VIỆN</th>
+                            <th colspan="2"
+                                class="border border-slate-300 text-red-700 bg-red-50 print:bg-white print:text-black print:border-black">
+                                TỬ VONG</th>
+                            <th colspan="2"
+                                class="border border-slate-300 font-black text-indigo-900 bg-indigo-100 print:bg-white print:text-black print:border-black">
+                                BN
+                                HIỆN CÓ</th>
+                        </tr>
+                        <tr class="text-[9px] bg-slate-50 print:bg-white">
+                            <th class="border border-slate-300 print:border-black">TS (1)</th>
+                            <th class="border border-slate-300 print:border-black">TS</th>
+                            <th class="border border-slate-300 print:border-black">BHYT</th>
+                            <th class="border border-slate-300 print:border-black">Nội trú</th>
+                            <th class="border border-slate-300 print:border-black">Ngoại</th>
+                            <th class="border border-slate-300 print:border-black">Nội</th>
+                            <th class="border border-slate-300 print:border-black">TS</th>
+                            <th class="border border-slate-300 print:border-black">TL về</th>
+                            <th class="border border-slate-300 print:border-black">Tại CS</th>
+                            <th class="border border-slate-300 print:border-black">Trước CS</th>
+                            <th class="border border-slate-300 bg-indigo-100 print:bg-white print:border-black">TS (7.1)
+                            </th>
+                            <th class="border border-slate-300 bg-indigo-100 print:bg-white print:border-black">
+                                Nặng(7.2)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                    <tfoot class="font-black bg-indigo-50 text-indigo-900 print:bg-white print:text-black"
+                        id="tableFooter"></tfoot>
+                </table>
+            </div>
+
+            <!-- Table 2 -->
+            <div
+                class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 print:bg-white print:px-0 print:py-1 print:border-none">
+                <h3
+                    class="font-extrabold text-xs uppercase mb-3 text-slate-800 flex items-center print:text-[10px] print:text-black print:mb-1">
+                    <i class="fa-solid fa-chart-bar mr-2 text-indigo-600 no-print"></i> II. CÁC CHỈ SỐ CHUYÊN MÔN KHÁC
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 print-grid-cols-2">
+                    <table
+                        class="w-full bg-white border-collapse border border-slate-300 rounded-xl overflow-hidden shadow-sm self-start print:shadow-none print:border-black print:rounded-none">
+                        <tbody id="extraStatsLeft"></tbody>
+                    </table>
+                    <div class="space-y-4 print:space-y-0">
+                        <table
+                            class="w-full bg-white border-collapse border border-slate-300 rounded-xl overflow-hidden shadow-sm self-start print:shadow-none print:border-black print:rounded-none">
+                            <tbody id="extraStatsRight"></tbody>
+                        </table>
+
+                        <!-- Inputs for Reporter/Leader (Visible on screen) -->
+                        <div class="no-print space-y-4 pt-2">
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase italic mb-2">Người
+                                    lập biểu:</label>
+                                <input type="text" id="reporter" oninput="updateSignatures()"
+                                    class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none bg-slate-50 font-bold focus:ring-2 ring-blue-500/20"
+                                    placeholder="Nhập họ tên...">
+                            </div>
+
+                            <!-- NEW: SỐ ĐIỆN THOẠI -->
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase italic mb-2">Số điện
+                                    thoại:</label>
+                                <input type="text" id="reporterPhone"
+                                    class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none bg-slate-50 font-bold focus:ring-2 ring-blue-500/20"
+                                    placeholder="Nhập số điện thoại liên hệ...">
+                            </div>
+
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase italic mb-2">Lãnh
+                                    đạo trực đơn vị:</label>
+                                <input type="text" id="leader" oninput="updateSignatures()"
+                                    class="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none bg-slate-50 font-bold focus:ring-2 ring-blue-500/20"
+                                    placeholder="Nhập họ tên lãnh đạo...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signature Section (Only Print) -->
+            <!-- ĐÃ CẬP NHẬT: TĂNG CỠ CHỮ -->
+            <div class="hidden print:grid grid-cols-2 gap-4 mt-6 text-center signature-section">
+                <div>
+                    <p class="font-bold uppercase">Người lập biểu</p>
+                    <div class="signature-space"></div> <!-- Khoảng trống ký tên -->
+                    <p class="signature-name" id="printReporter">...</p>
+                </div>
+                <div>
+                    <p class="font-bold uppercase" id="printLeaderTitle">Lãnh đạo trực đơn vị</p>
+                    <div class="signature-space"></div> <!-- Khoảng trống ký tên -->
+                    <p class="signature-name" id="printLeaderName">...</p>
+                </div>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="p-4 bg-slate-100 flex flex-wrap justify-end gap-3 no-print border-t">
+                <button onclick="switchView('admin')"
+                    class="px-5 py-2.5 text-indigo-700 font-bold text-xs uppercase bg-white border border-indigo-200 rounded-xl hover:bg-indigo-50 shadow-sm"><i
+                        class="fa-solid fa-clock-rotate-left mr-1.5"></i> Xem lại</button>
+                <button onclick="resetAll()"
+                    class="px-5 py-2.5 text-slate-600 font-bold text-xs uppercase bg-white border border-slate-300 rounded-xl hover:bg-slate-50"><i
+                        class="fa-solid fa-rotate mr-1.5"></i> Làm mới</button>
+                <button onclick="window.print()"
+                    class="px-5 py-2.5 bg-slate-800 text-white rounded-xl font-bold text-xs uppercase hover:bg-black"><i
+                        class="fa-solid fa-print mr-1.5"></i> In báo cáo</button>
+                <button id="btnSubmit" onclick="submitData()"
+                    class="px-10 py-2.5 bg-blue-600 text-white rounded-xl font-extrabold text-xs uppercase shadow-lg shadow-blue-200 hover:bg-blue-700">Gửi
+                    dữ liệu báo cáo <i class="fa-solid fa-paper-plane ml-1.5"></i></button>
+            </div>
+        </div>
+    </main>
+
+    <!-- ADMIN PANEL -->
+    <main id="view-admin" class="hidden max-w-[1250px] mx-auto p-4 md:p-6 print:p-0 print:m-0">
+        <div class="space-y-6 print:space-y-0">
+            <!-- Header Admin -->
+            <div
+                class="no-print bg-indigo-900 text-white p-6 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-black uppercase tracking-tight">Trung tâm Quản trị & Truy xuất</h2>
+                    <p class="text-indigo-300 text-xs font-bold italic">Quản lý, tổng hợp và xuất báo cáo chuyên nghiệp
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="showLogin()" id="btnShowLogin"
+                        class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase flex items-center gap-2 transition-all"><i
+                            class="fa-solid fa-user-lock"></i> Đăng nhập Admin</button>
+                    <div id="admin-badge-area"
+                        class="hidden bg-green-500 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Admin OK
+                        <button onclick="logoutAdmin()"
+                            class="ml-2 bg-black/20 hover:bg-black/30 p-1 px-2 rounded">Thoát</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Admin -->
+            <div id="admin-dashboard-area" class="hidden no-print grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-orange-50 p-6 rounded-2xl border border-orange-200 flex flex-col justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-orange-600 text-white p-3 rounded-xl shadow-lg"><i
+                                class="fa-solid fa-calculator text-2xl"></i></div>
+                        <div>
+                            <h3 class="font-black text-orange-900 uppercase text-sm">Tính tổng (Sheet Tổng)</h3>
+                            <p class="text-[11px] text-orange-700 font-bold italic">Cập nhật số liệu toàn viện hàng ngày
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="handleCalculateDailyTotal()" id="btnAdminCalc"
+                        class="w-full bg-orange-600 hover:bg-orange-700 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase shadow-lg transition-all">CHẠY
+                        TÍNH TỔNG 1 NGÀY</button>
+                </div>
+                <div
+                    class="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 flex flex-col justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-emerald-600 text-white p-3 rounded-xl shadow-lg"><i
+                                class="fa-solid fa-calendar-days text-2xl"></i></div>
+                        <div>
+                            <h3 class="font-black text-emerald-900 uppercase text-sm">Tính tổng dải ngày</h3>
+                            <p class="text-[11px] text-emerald-700 font-bold italic">Lưu vào sheet "Tổng nhiều"</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3"><input type="date" id="h-multi-start"
+                            class="border rounded px-2 py-1 text-xs font-bold outline-none bg-white"><input type="date"
+                            id="h-multi-end" class="border rounded px-2 py-1 text-xs font-bold outline-none bg-white">
+                    </div>
+                    <button onclick="handleCalculateMultiTotal()" id="btnAdminMultiCalc"
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase shadow-lg transition-all">CHẠY
+                        TÍNH TỔNG NHIỀU NGÀY</button>
+                </div>
+                <!-- NEW CARD: KIỂM TRA TIẾN ĐỘ -->
+                <div class="bg-blue-50 p-6 rounded-2xl border border-blue-200 flex flex-col justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-blue-600 text-white p-3 rounded-xl shadow-lg"><i
+                                class="fa-solid fa-list-check text-2xl"></i></div>
+                        <div>
+                            <h3 class="font-black text-blue-900 uppercase text-sm">Kiểm tra tiến độ</h3>
+                            <p class="text-[11px] text-blue-700 font-bold italic">Xem các khoa chưa nộp báo cáo</p>
+                        </div>
+                    </div>
+                    <button onclick="handleCheckProgress()" id="btnCheckProgress"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-black text-xs uppercase shadow-lg transition-all">KIỂM
+                        TRA NGAY</button>
+                </div>
+                <div
+                    class="bg-indigo-50 p-6 rounded-2xl border-4 border-indigo-200 flex flex-col justify-between gap-4 shadow-xl">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-indigo-600 text-white p-3 rounded-xl shadow-lg animate-bounce"><i
+                                class="fa-solid fa-file-excel text-2xl"></i></div>
+                        <div>
+                            <h3 class="font-black text-indigo-900 uppercase text-sm">XUẤT BÁO CÁO</h3>
+                            <p class="text-[11px] text-indigo-700 font-bold italic">Xuất Excel hoặc PDF kèm chữ ký</p>
+                        </div>
+                    </div>
+                    <button onclick="handleExportExcelPrompt()"
+                        class="w-full bg-indigo-700 hover:bg-indigo-800 text-white py-4 rounded-xl font-black text-xs uppercase shadow-2xl transition-all scale-105"><i
+                            class="fa-solid fa-download mr-2 text-lg"></i> XUẤT FILE NGAY</button>
+                </div>
+            </div>
+
+            <!-- Bộ lọc truy xuất -->
+            <div class="no-print bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex flex-wrap items-end gap-5">
+                    <div class="flex-1 min-w-[200px] space-y-1"><label
+                            class="block text-[10px] font-black text-slate-400 uppercase italic">Chọn
+                            Khoa:</label><select id="h-select-dept" onchange="handleDeptChangeForQuery()"
+                            class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-extrabold outline-none bg-slate-50 focus:ring-2 ring-indigo-500/20"></select>
+                    </div>
+                    <div id="h-date-container" class="flex-1 min-w-[200px] space-y-1"><label
+                            class="block text-[10px] font-black text-slate-400 uppercase italic">Chọn
+                            Ngày:</label><input type="date" id="h-select-date"
+                            class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-extrabold outline-none bg-slate-50 focus:ring-2 ring-indigo-500/20">
+                    </div>
+                    <div id="h-row-container" class="hidden flex-1 min-w-[200px] space-y-1"><label
+                            class="block text-[10px] font-black text-slate-400 uppercase italic">Chọn đợt tổng
+                            hợp:</label><select id="h-select-row"
+                            class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-extrabold outline-none bg-slate-50 focus:ring-2 ring-indigo-500/20"></select>
+                    </div>
+                    <button onclick="executeHistoryQuery()"
+                        class="bg-indigo-600 text-white px-10 py-2.5 rounded-xl font-black text-xs shadow hover:bg-indigo-800 uppercase transition-all"><i
+                            class="fa-solid fa-magnifying-glass mr-2"></i> TRUY XUẤT DỮ LIỆU</button>
+                </div>
+            </div>
+
+            <div id="history-loading" class="hidden no-print text-center py-12">
+                <div class="loader mb-4 !w-12 !h-12 !border-4"></div>
+                <p class="italic text-slate-400 font-black uppercase text-xs">Đang tìm dữ liệu...</p>
+            </div>
+
+            <!-- VÙNG HIỂN THỊ KẾT QUẢ XEM LẠI & IN -->
+            <div id="history-data-area" class="hidden space-y-6 print:space-y-0">
+                <div class="bg-white shadow-2xl rounded-2xl border border-slate-200 overflow-hidden container-main">
+                    <div class="no-print p-4 bg-slate-50 border-b flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex gap-6 text-[11px] font-black uppercase text-slate-500">
+                            <p>Khoa: <span id="h-res-khoa-info" class="text-indigo-700"></span></p>
+                            <p>Ngày: <span id="h-res-ngay-info" class="text-indigo-700"></span></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="window.print()"
+                                class="bg-slate-800 hover:bg-black text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase shadow-lg"><i
+                                    class="fa-solid fa-print mr-2"></i> In báo cáo này</button>
+                            <div id="admin-action-btns" class="hidden flex gap-2">
+                                <button onclick="handleUpdateHistory()"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-xl text-xs font-black uppercase"><i
+                                        class="fa-solid fa-floppy-disk mr-1.5"></i> Lưu sửa đổi</button>
+                                <button onclick="handleDeleteHistory()"
+                                    class="bg-white border-2 border-red-500 text-red-600 px-4 py-2.5 rounded-xl text-xs font-black uppercase"><i
+                                        class="fa-solid fa-trash mr-1.5"></i> Xóa</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="p-6 border-b border-slate-100 bg-slate-50/50 print:p-0 print:border-none print:bg-white">
+
+                        <!-- Header Admin View (Copy lại cấu trúc chuẩn) -->
+                        <div
+                            class="print-header-container flex flex-col md:flex-row justify-between items-start gap-4 mb-4 print:mb-1 print:gap-0">
+                            <div class="text-center md:text-left print-header-left w-full md:w-auto">
+                                <p class="font-bold text-[10px] uppercase text-slate-500 print:text-black">SỞ Y TẾ VĨNH
+                                    LONG</p>
+                                <p
+                                    class="font-extrabold text-[12px] border-b-2 border-slate-900 pb-0.5 uppercase inline-block print:text-[10pt] print:border-black">
+                                    BVĐK KHU VỰC CẦU NGANG</p>
+                                <div
+                                    class="mt-2 print:mt-1 font-bold text-[10px] uppercase print:text-black text-blue-800 flex justify-center md:justify-start print:justify-center items-center">
+                                    <span class="mr-1">ĐƠN VỊ:</span>
+                                    <span id="h-printDepartment"
+                                        class="text-[10px] font-bold text-blue-800 print:text-black print:text-[10pt] uppercase">...</span>
+                                </div>
+                            </div>
+                            <div class="text-center print-header-right w-full md:w-auto">
+                                <p
+                                    class="font-extrabold text-[11px] uppercase tracking-wide text-nowrap print:text-[10pt]">
+                                    CỘNG HÒA XÃ
+                                    HỘI CHỦ NGHĨA VIỆT NAM</p>
+                                <p
+                                    class="font-bold border-b border-slate-800 pb-0.5 inline-block text-[10px] print:text-[9pt] print:border-black">
+                                    Độc lập -
+                                    Tự do - Hạnh phúc</p>
+                                <p class="italic pt-2 text-[9px] font-medium text-slate-600 print:text-black print:pt-1"
+                                    id="h-currentDateString">
+                                    ...</p>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4 print:mt-1">
+                            <h2
+                                class="text-indigo-950 uppercase font-extrabold text-2xl print:text-lg tracking-tight print:text-black">
+                                BÁO CÁO NHANH TRỰC TUYẾN</h2>
+                            <p id="h-reportPeriodText"
+                                class="text-[11px] text-slate-700 font-bold italic mt-1 leading-relaxed whitespace-pre-line print:text-black print:text-[9pt]">
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4 overflow-x-auto print:px-0 print:py-0">
+                        <table
+                            class="w-full text-center text-[10px] border-collapse border border-slate-300 shadow-sm print:text-[8px] print:shadow-none print:border-black">
+                            <thead class="bg-slate-100 font-bold text-slate-700 print:bg-white print:text-black">
+                                <tr>
+                                    <th rowspan="3"
+                                        class="w-8 border border-slate-300 bg-slate-200/50 print:bg-white print:border-black">
+                                        TT</th>
+                                    <th rowspan="3"
+                                        class="min-w-[180px] border border-slate-300 bg-slate-200/50 print:bg-white print:border-black">
+                                        CHỈ
+                                        TIÊU KHÁM, CẤP CỨU</th>
+                                    <th
+                                        class="border border-slate-300 bg-indigo-50 text-indigo-900 print:bg-white print:text-black print:border-black">
+                                        BN CŨ</th>
+                                    <th colspan="2" class="border border-slate-300 print:border-black">KHÁM BỆNH</th>
+                                    <th class="border border-slate-300 print:border-black">VÀO VIỆN</th>
+                                    <th colspan="2" class="border border-slate-300 print:border-black">CHUYỂN TUYẾN</th>
+                                    <th colspan="2" class="border border-slate-300 print:border-black">RA VIỆN</th>
+                                    <th colspan="2"
+                                        class="border border-slate-300 text-red-700 bg-red-50 print:bg-white print:text-black print:border-black">
+                                        TỬ VONG</th>
+                                    <th colspan="2"
+                                        class="border border-slate-300 font-black text-indigo-900 bg-indigo-100 print:bg-white print:text-black print:border-black">
+                                        BN HIỆN
+                                        CÓ</th>
+                                </tr>
+                                <tr class="text-[9px] bg-slate-50 print:bg-white">
+                                    <th class="border border-slate-300 print:border-black">TS (1)</th>
+                                    <th class="border border-slate-300 print:border-black">TS</th>
+                                    <th class="border border-slate-300 print:border-black">BHYT</th>
+                                    <th class="border border-slate-300 print:border-black">Nội trú</th>
+                                    <th class="border border-slate-300 print:border-black">Ngoại</th>
+                                    <th class="border border-slate-300 print:border-black">Nội</th>
+                                    <th class="border border-slate-300 print:border-black">TS</th>
+                                    <th class="border border-slate-300 print:border-black">TL về</th>
+                                    <th class="border border-slate-300 print:border-black">Tại CS</th>
+                                    <th class="border border-slate-300 print:border-black">Trước CS</th>
+                                    <th class="border border-slate-300 bg-indigo-100 print:bg-white print:border-black">
+                                        TS (7.1)</th>
+                                    <th class="border border-slate-300 bg-indigo-100 print:bg-white print:border-black">
+                                        Nặng(7.2)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="h-tableBody"></tbody>
+                            <tfoot class="font-black bg-indigo-50 text-indigo-900 print:bg-white print:text-black"
+                                id="h-tableFooter"></tfoot>
+                        </table>
+                    </div>
+
+                    <div
+                        class="px-6 py-4 bg-slate-50/50 border-t border-slate-100 print:bg-white print:px-0 print:py-1 print:border-none">
+                        <h3
+                            class="font-extrabold text-xs uppercase mb-3 text-slate-800 flex items-center print:text-[10px] print:text-black print:mb-1">
+                            <i class="fa-solid fa-chart-bar mr-2 text-indigo-600 no-print"></i> II. CÁC CHỈ SỐ CHUYÊN
+                            MÔN KHÁC
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 print-grid-cols-2">
+                            <table
+                                class="w-full bg-white border-collapse border border-slate-300 rounded-xl overflow-hidden shadow-sm self-start print:shadow-none print:border-black print:rounded-none">
+                                <tbody id="h-extraStatsLeft"></tbody>
+                            </table>
+                            <table
+                                class="w-full bg-white border-collapse border border-slate-300 rounded-xl overflow-hidden shadow-sm self-start print:shadow-none print:border-black print:rounded-none">
+                                <tbody id="h-extraStatsRight"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ĐÃ CẬP NHẬT: TĂNG CỠ CHỮ PHẦN ADMIN XEM LẠI -->
+                    <div class="p-6 grid grid-cols-2 gap-4 text-center signature-section">
+                        <div>
+                            <p class="font-bold uppercase">Người lập biểu</p>
+                            <div class="signature-space"></div>
+                            <input type="text" id="h-reporter-val"
+                                class="no-print w-full text-center border-b font-extrabold outline-none bg-transparent"
+                                placeholder="...">
+                            <p class="hidden print:block signature-name" id="h-printReporter">...</p>
+                        </div>
+                        <div>
+                            <p class="font-bold uppercase" id="h-printLeaderTitle">Lãnh đạo trực đơn vị</p>
+                            <div class="signature-space"></div>
+                            <input type="text" id="h-leader-val"
+                                class="no-print w-full text-center border-b font-extrabold outline-none bg-transparent"
+                                placeholder="..." oninput="updateHLeaderTitle()">
+                            <p class="hidden print:block signature-name" id="h-printLeaderName">...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- EXCEL/PDF MODAL -->
+    <div id="excel-modal"
+        class="hidden fixed inset-0 z-[250] flex items-center justify-center p-4 bg-indigo-950/80 backdrop-blur-md">
+        <div
+            class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border-4 border-indigo-100 animate-in fade-in zoom-in duration-300">
+            <h2 class="text-xl font-black text-indigo-900 uppercase mb-6 text-center">Tùy chọn xuất báo cáo</h2>
+            <div class="space-y-4 mb-8">
+                <!-- THÊM Ô NHẬP SỐ BÁO CÁO -->
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase italic mb-1 ml-1">Số báo cáo:</label>
+                    <input type="text" id="report-num"
+                        class="w-full border-2 border-slate-100 rounded-xl p-3 outline-none focus:border-indigo-500 font-bold text-sm bg-slate-50"
+                        placeholder="Nhập số (VD: 123)...">
+                </div>
+
+                <div><label class="block text-[10px] font-black text-slate-400 uppercase italic mb-1 ml-1">Người lập
+                        biểu (Ký tên):</label><select id="sel-excel-rep"
+                        class="w-full border-2 border-slate-100 rounded-xl p-3 outline-none focus:border-indigo-500 font-bold text-sm bg-slate-50">
+                        <option value="Trần Quốc Huy">Trần Quốc Huy</option>
+                        <option value="Giang Hoàng Tỷ">Giang Hoàng Tỷ</option>
+                        <option value="Phạm Trần Đức Huy">Phạm Trần Đức Huy</option>
+                        <option value="Nguyễn Đăng Khoa">Nguyễn Đăng Khoa</option>
+                    </select></div>
+                <div><label class="block text-[10px] font-black text-slate-400 uppercase italic mb-1 ml-1">Lãnh đạo trực
+                        đơn vị:</label><select id="sel-excel-lead"
+                        class="w-full border-2 border-slate-100 rounded-xl p-3 outline-none focus:border-indigo-500 font-bold text-sm bg-slate-50">
+                        <option value="Dương Trung Hiếu">Dương Trung Hiếu (Giám Đốc)</option>
+                        <option value="Lê Thị Hạnh Dung">Lê Thị Hạnh Dung (Phó Giám Đốc)</option>
+                        <option value="Trần Văn Bửu">Trần Văn Bửu (Phó Giám Đốc)</option>
+                        <option value="Sơn Thị Chanh Trị">Sơn Thị Chanh Trị (Lãnh đạo trực chuyên môn)</option>
+                    </select></div>
+            </div>
+            <div class="space-y-3">
+                <button onclick="exportFile('excel', 'single')"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-2xl font-black uppercase text-xs shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95"><i
+                        class="fa-solid fa-file-excel"></i> Xuất Excel 1 ngày</button>
+                <button onclick="exportFile('excel', 'multi')"
+                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-2xl font-black uppercase text-xs shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95"><i
+                        class="fa-solid fa-file-csv"></i> Xuất Excel nhiều ngày</button>
+
+                <!-- NÚT PDF CŨ -->
+                <button onclick="exportFile('pdf', 'single')"
+                    class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-2xl font-black uppercase text-xs shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 border-t-4 border-red-500"><i
+                        class="fa-solid fa-file-pdf"></i> Xuất PDF 1 Ngày (Có chữ ký)</button>
+
+                <!-- NÚT MỚI: XUẤT PDF NHIỀU NGÀY -->
+                <button onclick="exportFile('pdf', 'multi')"
+                    class="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-2xl font-black uppercase text-xs shadow-lg flex items-center justify-center gap-3 transition-all active:scale-95 border-t-4 border-orange-500"><i
+                        class="fa-solid fa-file-pdf"></i> Xuất PDF Nhiều Ngày (Có chữ ký)</button>
+
+                <button onclick="closeExcelModal()"
+                    class="w-full bg-slate-100 hover:bg-slate-200 text-slate-500 py-3 rounded-2xl font-bold uppercase text-[10px] mt-4">Hủy
+                    bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="login-modal"
+        class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div
+            class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center border border-slate-200 animate-in fade-in zoom-in duration-300">
+            <i class="fa-solid fa-user-shield text-blue-600 text-5xl mb-4"></i>
+            <h2 class="text-xl font-extrabold text-slate-800 uppercase mb-6">Xác thực Admin</h2>
+            <div class="space-y-4">
+                <input type="text" id="admin-user"
+                    class="w-full border-2 border-slate-100 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-center"
+                    placeholder="Tên đăng nhập">
+                <input type="password" id="admin-password"
+                    class="w-full border-2 border-slate-100 rounded-xl p-3 outline-none focus:border-blue-500 font-bold text-center"
+                    placeholder="Mật khẩu">
+                <div id="login-error"
+                    class="hidden text-red-500 text-xs font-bold bg-red-50 p-2 rounded border border-red-100">Sai tài
+                    khoản hoặc mật khẩu!</div>
+                <div class="flex gap-2">
+                    <button onclick="closeLogin()"
+                        class="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold uppercase text-xs">Hủy</button>
+                    <button onclick="handleLogin()" id="btnLoginSubmit"
+                        class="flex-[2] bg-blue-600 text-white py-3 rounded-xl font-black hover:bg-blue-700 shadow-lg uppercase text-sm">Đăng
+                        nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyK0GNOMUu_NnDbVxUWYP92nHnJ1FD7ovfHM_-ziQcGbRjXKt1f1QjBTToHZGBEuypB2g/exec";
+        const departments = ["Nội", "Ngoại", "Sản", "Nhi", "Cấp Cứu", "YHCT", "Gây Mê"];
+        const categories = ["Tai nạn giao thông*", "Tai nạn do pháo nổ*", "Tai nạn do vũ khí, vật liệu nổ tự chế*", "Ngộ độc thực phẩm", "Các đối tượng người bệnh còn lại"];
+        const extraStatsDef = [
+            { id: 'phauThuat', label: 'Số ca phẫu thuật (loại 3 trở lên)', stt: 6 },
+            { id: 'ptCapCuu', label: 'Trong đó, Phẫu thuật cấp cứu do tai nạn', isSub: true },
+            { id: 'ptKhac', label: 'Trong đó, các phẫu thuật khác', isSub: true },
+            { id: 'tongSinh', label: 'TS trẻ sinh tại CSKCB', stt: 9 },
+            { id: 'sinhMo', label: 'Trong đó, số trẻ sinh mổ đẻ', isSub: true },
+            { id: 'mauDuTru', label: 'Tổng số máu dự trữ (ml)', suffix: 'ml', stt: 11 },
+            { id: 'xeCuuThuong', label: 'Số lượt xe cứu thương', stt: 12 },
+            { id: 'duongDayNong', label: 'Đường dây nóng', stt: 13 }
+        ];
+
+        let isAdmin = false;
+        let lastRetrievedData = null;
+
+        function switchView(view) {
+            const views = ['view-report', 'view-admin'];
+            views.forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            const navs = ['nav-report', 'nav-history'];
+            navs.forEach(n => { const el = document.getElementById(n); if (el) { el.classList.remove('bg-indigo-800', 'border-b-2', 'text-white'); el.classList.add('text-indigo-100'); } });
+            const activeNav = document.getElementById(`nav-${view === 'admin' ? 'history' : 'report'}`);
+            if (activeNav) { activeNav.classList.add('bg-indigo-800', 'border-b-2', 'text-white'); activeNav.classList.remove('text-indigo-100'); }
+        }
+
+        // --- AUTH ---
+        function showLogin() { document.getElementById('login-modal').classList.remove('hidden'); }
+        function closeLogin() { document.getElementById('login-modal').classList.add('hidden'); }
+        function handleLogin() {
+            const user = document.getElementById('admin-user').value.trim();
+            const pass = document.getElementById('admin-password').value.trim();
+            if (!user || !pass) return;
+            const btn = document.getElementById('btnLoginSubmit');
+            btn.disabled = true; btn.innerHTML = '...';
+            window.handleLoginResponse = function (res) {
+                btn.disabled = false; btn.innerHTML = 'Đăng nhập';
+                if (res.result === "success") { isAdmin = true; updateAdminUI(); closeLogin(); }
+                else { document.getElementById('login-error').classList.remove('hidden'); }
+                const s = document.getElementById('jsonp-login'); if (s) s.remove();
+            };
+            const script = document.createElement('script'); script.id = "jsonp-login";
+            script.src = `${GAS_URL}?action=login&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}&callback=handleLoginResponse`;
+            document.body.appendChild(script);
+        }
+
+        function updateAdminUI() {
+            const badge = document.getElementById('admin-badge-area');
+            const showBtn = document.getElementById('btnShowLogin');
+            const dashboard = document.getElementById('admin-dashboard-area');
+            const editControls = document.getElementById('admin-action-btns');
+            if (isAdmin) { badge.classList.remove('hidden'); showBtn.classList.add('hidden'); dashboard.classList.remove('hidden'); editControls.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); showBtn.classList.remove('hidden'); dashboard.classList.add('hidden'); editControls.classList.add('hidden'); }
+            const hDeptSelect = document.getElementById('h-select-dept');
+            const currentVal = hDeptSelect.value;
+            hDeptSelect.innerHTML = '';
+            departments.forEach(d => hDeptSelect.add(new Option(d, d)));
+            if (isAdmin) { hDeptSelect.add(new Option("Tổng", "Tổng")); hDeptSelect.add(new Option("Tổng nhiều", "Tổng nhiều")); }
+            hDeptSelect.value = departments.includes(currentVal) ? currentVal : "Cấp Cứu";
+            handleDeptChangeForQuery();
+        }
+
+        function logoutAdmin() { isAdmin = false; updateAdminUI(); document.getElementById('history-data-area').classList.add('hidden'); }
+
+        // --- TRUY XUẤT ---
+        function handleDeptChangeForQuery() {
+            const khoa = document.getElementById('h-select-dept').value;
+            const dateContainer = document.getElementById('h-date-container');
+            const rowContainer = document.getElementById('h-row-container');
+            if (khoa === "Tổng nhiều") { dateContainer.classList.add('hidden'); rowContainer.classList.remove('hidden'); fetchRangeListForMulti(); }
+            else { dateContainer.classList.remove('hidden'); rowContainer.classList.add('hidden'); }
+        }
+
+        function fetchRangeListForMulti() {
+            const selRow = document.getElementById('h-select-row');
+            selRow.innerHTML = '<option disabled selected>Đang tải danh sách...</option>';
+            window.handleRangeList = function (res) {
+                selRow.innerHTML = '';
+                if (res.result === "success" && res.ranges && res.ranges.length > 0) {
+                    res.ranges.forEach(r => { if (r && r !== "Ngày báo cáo") selRow.add(new Option(r, r)); });
+                } else { selRow.add(new Option("Không có dữ liệu", "")); }
+                const s = document.getElementById('jsonp-range-list'); if (s) s.remove();
+            };
+            const script = document.createElement('script'); script.id = 'jsonp-range-list';
+            script.src = `${GAS_URL}?action=get_all_dates&khoa=Tổng nhiều&callback=handleRangeList`;
+            document.body.appendChild(script);
+        }
+
+        function executeHistoryQuery() {
+            const khoa = document.getElementById('h-select-dept').value;
+            let date = document.getElementById('h-select-date').value;
+            if (khoa === "Tổng nhiều") date = document.getElementById('h-select-row').value;
+            if (!date || date.includes("Đang tải")) return alert("Vui lòng chọn ngày/đợt!");
+            document.getElementById('history-loading').classList.remove('hidden');
+            document.getElementById('history-data-area').classList.add('hidden');
+            window.handleHistoryData = function (res) {
+                document.getElementById('history-loading').classList.add('hidden');
+                if (res.result === "success" && res.data) {
+                    lastRetrievedData = res;
+                    document.getElementById('history-data-area').classList.remove('hidden');
+                    renderHistoryToTemplate(res, khoa, date);
+                } else alert("Không tìm thấy dữ liệu!");
+                const s = document.getElementById('jsonp-history-exec'); if (s) s.remove();
+            };
+            const script = document.createElement('script'); script.id = 'jsonp-history-exec';
+            script.src = `${GAS_URL}?action=get_prev_data&khoa=${encodeURIComponent(khoa)}&date=${encodeURIComponent(date)}&callback=handleHistoryData`;
+            document.body.appendChild(script);
+        }
+
+        function renderHistoryToTemplate(res, khoa, date) {
+            document.getElementById('h-res-khoa-info').innerText = khoa;
+            document.getElementById('h-res-ngay-info').innerText = date;
+            document.getElementById('h-printDepartment').innerText = khoa;
+            document.getElementById('h-reporter-val').value = res.reporter || "";
+            document.getElementById('h-leader-val').value = res.lanhdao || "";
+            document.getElementById('h-printReporter').innerText = res.reporter || "";
+            document.getElementById('h-printLeaderName').innerText = res.lanhdao || "";
+            updateHDateStrings(date);
+            updateHLeaderTitle();
+
+            const tbody = document.getElementById('h-tableBody'); tbody.innerHTML = '';
+            categories.forEach((name, rIdx) => {
+                const tr = document.createElement('tr');
+                let html = `<td class="border border-slate-300 font-bold text-slate-400 bg-slate-50 print:bg-white print:border-black">${rIdx + 1}</td><td class="border border-slate-300 text-left px-3 font-bold text-slate-700 text-[11px] print:text-black print:border-black">${name}</td>`;
+                for (let cIdx = 0; cIdx < 12; cIdx++) {
+                    const val = res.data[5 + (rIdx * 12) + cIdx] || 0;
+                    // Cột 10 không còn readonly nữa
+                    const isReadOnly = !isAdmin;
+                    html += `<td class="border border-slate-300 p-0 bg-white print:border-black"><input type="number" data-hrow="${rIdx}" data-hcol="${cIdx}" value="${val}" ${isReadOnly ? 'readonly' : 'oninput="calculateHTotals()"'} class="w-full text-center outline-none border-none font-bold text-[11px] py-2 ${(!isReadOnly && isAdmin) ? 'admin-editable' : ''}"></td>`;
+                }
+                tr.innerHTML = html; tbody.appendChild(tr);
+            });
+            document.getElementById('h-tableFooter').innerHTML = `<tr><td class="border border-slate-300 print:border-black">-</td><td class="border border-slate-300 text-left px-3 uppercase font-black text-[11px] print:text-black print:border-black">TỔNG CỘNG</td>${Array(12).fill(0).map((_, i) => `<td class="border border-slate-300 font-black print:border-black" data-hfcol="${i}">0</td>`).join('')}</tr>`;
+
+            const extraLeft = document.getElementById('h-extraStatsLeft'); extraLeft.innerHTML = '';
+            const extraRight = document.getElementById('h-extraStatsRight'); extraRight.innerHTML = '';
+            extraStatsDef.forEach((stat, i) => {
+                const val = res.data[65 + i] || 0;
+                const isLeft = ['phauThuat', 'ptCapCuu', 'ptKhac', 'tongSinh'].includes(stat.id);
+                const target = isLeft ? extraLeft : extraRight;
+                target.innerHTML += `<tr class="border-b border-slate-200 print:border-black"><td class="border-r border-slate-200 w-10 text-center font-bold bg-slate-50/50 text-slate-400 print:text-[9px] print:bg-white print:text-black print:border-black">${stat.stt || ''}</td><td class="text-left px-3 ${stat.isSub ? 'indent-item text-[10px] print:text-black' : 'font-bold text-[11px] text-slate-700 print:text-black'}">${stat.label}</td><td class="w-28 p-0 bg-white border-l print:border-black"><input type="number" id="h-val-${stat.id}" value="${val}" ${!isAdmin ? 'readonly' : ''} class="w-full text-right font-black text-blue-700 outline-none p-1.5 text-[12px] bg-transparent ${isAdmin ? 'admin-editable' : ''} print:text-black"></td></tr>`;
+            });
+            calculateHTotals();
+        }
+
+        function calculateHTotals() {
+            const totals = Array(12).fill(0);
+            let totalChuyenVienNoi = 0; // Biến tính tổng chuyển viện nội (cột 5)
+
+            for (let r = 0; r < categories.length; r++) {
+                const getV = (c) => parseInt(document.querySelector(`input[data-hrow="${r}"][data-hcol="${c}"]`).value) || 0;
+                
+                // Cột 5 là Chuyển tuyến Nội
+                totalChuyenVienNoi += getV(5);
+
+                // Vẫn tính tổng dọc
+                for (let c = 0; c < 12; c++) totals[c] += getV(c);
+            }
+            totals.forEach((v, i) => document.querySelector(`td[data-hfcol="${i}"]`).innerText = v);
+
+            // Cập nhật số xe cứu thương (h-val-xeCuuThuong) luôn bằng tổng cột Chuyển tuyến Nội
+            const ambulanceInput = document.getElementById('h-val-xeCuuThuong');
+            if (ambulanceInput) {
+                ambulanceInput.value = totalChuyenVienNoi;
+            }
+        }
+
+        function updateHDateStrings(dateVal) {
+            let dateObj = (dateVal.includes('.') || isNaN(new Date(dateVal).getTime())) ? new Date() : new Date(dateVal);
+            const yesterday = new Date(dateObj); yesterday.setDate(dateObj.getDate() - 1);
+            const fmt = (d) => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            document.getElementById('h-currentDateString').innerText = `Cầu Ngang, ngày ${dateObj.getDate()} tháng ${dateObj.getMonth() + 1} năm ${dateObj.getFullYear()}`;
+            if (dateVal.includes('.')) {
+                document.getElementById('h-reportPeriodText').innerText = `TÌNH HÌNH KHÁM CHỮA BỆNH, TAI NẠN, NGỘ ĐỘC\nDải ngày tổng hợp: ${dateVal}`;
+            } else {
+                document.getElementById('h-reportPeriodText').innerText = `TÌNH HÌNH KHÁM CHỮA BỆNH, TAI NẠN, NGỘ ĐỘC\n Từ 06 giờ ngày ${fmt(yesterday)} đến 06 giờ ngày ${fmt(dateObj)}`;
+            }
+        }
+
+        function updateHLeaderTitle() {
+            const name = document.getElementById('h-leader-val').value;
+            let title = "Lãnh đạo trực đơn vị";
+            if (name === "Dương Trung Hiếu") title = "GIÁM ĐỐC"; else if (["Lê Thị Hạnh Dung", "Trần Văn Bửu"].includes(name)) title = "PHÓ GIÁM ĐỐC";
+            document.getElementById('h-printLeaderTitle').innerText = title;
+            document.getElementById('h-printReporter').innerText = document.getElementById('h-reporter-val').value;
+            document.getElementById('h-printLeaderName').innerText = name;
+        }
+
+        // --- EXCEL & PDF EXPORT ---
+        function handleExportExcelPrompt() { if (!isAdmin) return; document.getElementById('excel-modal').classList.remove('hidden'); }
+        function closeExcelModal() { document.getElementById('excel-modal').classList.add('hidden'); }
+
+        // Updated function to handle both Excel and PDF
+        function exportFile(type, mode) {
+            let date, sourceSheet;
+            if (mode === 'single') {
+                date = document.getElementById('h-select-date').value || document.getElementById('reportDate').value;
+                sourceSheet = "Tổng";
+            } else {
+                const khoaCurrent = document.getElementById('h-select-dept').value;
+                date = (khoaCurrent === "Tổng nhiều") ? document.getElementById('h-select-row').value : `${document.getElementById('h-multi-start').value}.${document.getElementById('h-multi-end').value}`;
+                sourceSheet = "Tổng nhiều";
+            }
+
+            if (!date || date.includes("Đang tải")) return alert("Vui lòng chọn ngày/đợt!");
+
+            const reporter = document.getElementById('sel-excel-rep').value;
+            const leader = document.getElementById('sel-excel-lead').value;
+            const reportNum = document.getElementById('report-num').value.trim(); // Lấy số báo cáo
+
+            closeExcelModal();
+
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = "fixed inset-0 z-[300] bg-black/50 flex items-center justify-center text-white font-black text-xs italic uppercase flex-col gap-2";
+            loadingOverlay.innerHTML = `<div class="loader mr-4"></div> ${type === 'pdf' ? 'ĐANG CHÈN CHỮ KÝ & TẠO PDF...' : 'ĐANG ĐIỀN DỮ LIỆU EXCEL...'}`;
+            document.body.appendChild(loadingOverlay);
+
+            window.handleExportResult = function (res) {
+                loadingOverlay.remove();
+                if (res.result === "success") {
+                    window.open(res.downloadUrl, '_blank');
+                } else {
+                    alert("Lỗi: " + res.message);
+                }
+                const s = document.getElementById('jsonp-export'); if (s) s.remove();
+            };
+
+            const action = type === 'pdf' ? 'export_pdf' : 'fill_template';
+            const script = document.createElement('script'); script.id = 'jsonp-export';
+            // Thêm tham số &reportNum=${encodeURIComponent(reportNum)}
+            script.src = `${GAS_URL}?action=${action}&sourceSheet=${encodeURIComponent(sourceSheet)}&date=${encodeURIComponent(date)}&rep=${encodeURIComponent(reporter)}&lead=${encodeURIComponent(leader)}&reportNum=${encodeURIComponent(reportNum)}&callback=handleExportResult`;
+            document.body.appendChild(script);
+        }
+
+        // --- ADMIN ACTIONS (UPDATE/DELETE) ---
+        function handleUpdateHistory() {
+            if (!isAdmin) return;
+            const khoa = document.getElementById('h-res-khoa-info').innerText;
+            const date = document.getElementById('h-res-ngay-info').innerText;
+            // NOTE: ADMIN UPDATE DOES NOT INCLUDE PHONE YET - ASSUMING ONLY REPORTING NEEDS IT
+            const rowValues = [null, khoa, date, document.getElementById('h-reporter-val').value, document.getElementById('h-leader-val').value];
+            for (let r = 0; r < categories.length; r++) { for (let c = 0; c < 12; c++) rowValues.push(parseInt(document.querySelector(`input[data-hrow="${r}"][data-hcol="${c}"]`).value) || 0); }
+            extraStatsDef.forEach(s => rowValues.push(parseInt(document.getElementById(`h-val-${s.id}`).value) || 0));
+            rowValues.push(JSON.stringify(categories.map((_, r) => parseInt(document.querySelector(`input[data-hrow="${r}"][data-hcol="10"]`).value) || 0)));
+            window.handleUpdateResult = function (res) { if (res.result === "success") alert("Cập nhật thành công!"); else alert("Lỗi: " + res.message); const s = document.getElementById('jsonp-update'); if (s) s.remove(); };
+            const script = document.createElement('script'); script.id = 'jsonp-update';
+            script.src = `${GAS_URL}?action=update&data=${encodeURIComponent(JSON.stringify({ khoa, reportDate: date, rowValues }))}&callback=handleUpdateResult`;
+            document.body.appendChild(script);
+        }
+
+        function handleDeleteHistory() {
+            if (!isAdmin || !confirm("Xóa vĩnh viễn báo cáo này?")) return;
+            const khoa = document.getElementById('h-res-khoa-info').innerText;
+            const date = document.getElementById('h-res-ngay-info').innerText;
+            window.handleDeleteResult = function (res) { if (res.result === "success") { alert("Đã xóa."); document.getElementById('history-data-area').classList.add('hidden'); } const s = document.getElementById('jsonp-delete'); if (s) s.remove(); };
+            const script = document.createElement('script'); script.id = 'jsonp-delete';
+            script.src = `${GAS_URL}?action=delete&khoa=${encodeURIComponent(khoa)}&date=${date}&callback=handleDeleteResult`;
+            document.body.appendChild(script);
+        }
+
+        // --- DASHBOARD ACTIONS ---
+        function handleCalculateDailyTotal() {
+            let date = document.getElementById('h-select-date').value || document.getElementById('reportDate').value;
+            if (!date) return alert("Chọn ngày!");
+            const btn = document.getElementById('btnAdminCalc'); btn.disabled = true; btn.innerHTML = '...';
+            window.handleCalcResult = function (res) { btn.disabled = false; btn.innerHTML = 'CHẠY TÍNH TỔNG 1 NGÀY'; alert(res.message); const s = document.getElementById('jsonp-calc-total'); if (s) s.remove(); };
+            const script = document.createElement('script'); script.id = 'jsonp-calc-total';
+            script.src = `${GAS_URL}?action=calculate_total_all&date=${date}&callback=handleCalcResult`;
+            document.body.appendChild(script);
+        }
+
+        function handleCalculateMultiTotal() {
+            const start = document.getElementById('h-multi-start').value; const end = document.getElementById('h-multi-end').value;
+            if (!start || !end) return alert("Chọn đủ dải ngày!");
+            const techRange = `${start}.${end}`;
+            if (!confirm(`Xác nhận tổng hợp từ ngày ${start} đến ${end}?`)) return;
+            const btn = document.getElementById('btnAdminMultiCalc'); btn.disabled = true; btn.innerHTML = '...';
+            window.handleMultiCalcResult = function (res) { btn.disabled = false; btn.innerHTML = 'CHẠY TÍNH TỔNG NHIỀU NGÀY'; alert(res.message); const s = document.getElementById('jsonp-multi-calc'); if (s) s.remove(); };
+            const script = document.createElement('script'); script.id = 'jsonp-multi-calc';
+            script.src = `${GAS_URL}?action=calculate_multi_total&startDate=${start}&endDate=${end}&dateRangeText=${encodeURIComponent(techRange)}&callback=handleMultiCalcResult`;
+            document.body.appendChild(script);
+        }
+
+        // --- NEW: CHECK PROGRESS ---
+        function handleCheckProgress() {
+            let date = document.getElementById('h-select-date').value;
+            if (!date) return alert("Vui lòng chọn ngày cần kiểm tra ở ô 'Chọn Ngày' bên dưới!");
+
+            const btn = document.getElementById('btnCheckProgress');
+            btn.disabled = true; btn.innerHTML = 'Đang kiểm tra...';
+
+            window.handleCheckResult = function (res) {
+                btn.disabled = false; btn.innerHTML = 'KIỂM TRA NGAY';
+
+                if (res.result === "success") {
+                    if (res.missing.length === 0) {
+                        alert(`Tuyệt vời! Tất cả các khoa đã báo cáo đầy đủ cho ngày ${date}.`);
+                    } else {
+                        alert(`Ngày ${date} còn thiếu báo cáo của các khoa:\n\n- ${res.missing.join('\n- ')}`);
+                    }
+                } else {
+                    alert("Lỗi: " + res.message);
+                }
+                const s = document.getElementById('jsonp-check-missing'); if (s) s.remove();
+            };
+
+            const script = document.createElement('script'); script.id = 'jsonp-check-missing';
+            script.src = `${GAS_URL}?action=check_missing&date=${date}&callback=handleCheckResult`;
+            document.body.appendChild(script);
+        }
+
+        // --- KHỞI TẠO ---
+        function initApp() {
+            const deptSelect = document.getElementById('department');
+            const hDeptSelect = document.getElementById('h-select-dept');
+            departments.forEach(d => { deptSelect.add(new Option(d, d)); hDeptSelect.add(new Option(d, d)); });
+            deptSelect.value = "Cấp Cứu";
+            document.getElementById('reportDate').valueAsDate = new Date();
+            // Default history date to today
+            document.getElementById('h-select-date').valueAsDate = new Date();
+
+            updateDateString();
+
+            const tableBody = document.getElementById('tableBody');
+            categories.forEach((name, idx) => {
+                const tr = document.createElement('tr');
+                let html = `<td class="border border-slate-300 font-bold text-slate-400 bg-slate-50 print:bg-white print:border-black">${idx + 1}</td><td class="border border-slate-300 text-left px-3 font-bold text-slate-700 text-[11px] print:text-black print:border-black">${name}</td>`;
+                for (let i = 0; i < 12; i++) {
+                    // Cột 10 (BN Hiện có) giờ là nhập được, nhưng có thể style khác 1 chút
+                    const isCol10 = (i === 10);
+                    // Bỏ readonly cho cột 10
+                    html += `<td class="border border-slate-300 p-0 bg-white print:border-black"><input type="number" data-row="${idx}" data-col="${i}" value="0" onfocus="this.select()" oninput="calculateTotals(this)" class="input-focus font-bold ${isCol10 ? 'text-indigo-900 bg-indigo-50' : 'text-slate-800'} print:text-black print:bg-white" style="width:100%; text-align:center; outline:none; border:none; font-size:11px; padding:8px 0;"></td>`;
+                }
+                tr.innerHTML = html; tableBody.appendChild(tr);
+            });
+            document.getElementById('tableFooter').innerHTML = `<tr><td class="border border-slate-300 print:border-black">-</td><td class="border border-slate-300 text-left px-3 uppercase font-black text-[11px] print:text-black print:border-black">TỔNG CỘNG</td>${Array(12).fill(0).map((_, i) => `<td class="border border-slate-300 font-black print:border-black" data-fcol="${i}">0</td>`).join('')}</tr>`;
+
+            const extraLeft = document.getElementById('extraStatsLeft');
+            const extraRight = document.getElementById('extraStatsRight');
+            extraStatsDef.forEach(stat => {
+                const target = ['phauThuat', 'ptCapCuu', 'ptKhac', 'tongSinh'].includes(stat.id) ? extraLeft : extraRight;
+
+                // Set ptKhac to readonly
+                const isPtKhac = stat.id === 'ptKhac';
+
+                target.innerHTML += `<tr class="border-b border-slate-200 print:border-black"><td class="border-r border-slate-200 w-10 text-center font-bold bg-slate-50/50 text-slate-400 print:text-[9px] print:bg-white print:text-black print:border-black">${stat.stt || ''}</td><td class="text-left px-3 ${stat.isSub ? 'indent-item text-[10px] print:text-[8.5px] print:text-black' : 'font-bold text-[11px] text-slate-700 print:text-[9.5px] print:text-black'}">${stat.label}</td><td class="w-28 p-0 bg-white border-l print:border-black"><div class="flex items-center px-2"><input type="number" id="${stat.id}" value="0" onfocus="this.select()" ${isPtKhac ? 'readonly' : 'oninput="calculateSurgeries(this)"'} class="w-full text-right font-black text-blue-700 outline-none p-1.5 text-[12px] bg-transparent ${isPtKhac ? 'input-readonly-custom' : 'input-focus'} print:text-[11px] print:text-black">${stat.suffix ? `<span class="text-[9px] text-slate-400 font-bold ml-1 print:text-[8px] print:text-black">${stat.suffix}</span>` : ''}</div></td></tr>`;
+            });
+            syncDepartment(); fetchPrevDataSummary(); updateSignatures(); updateAdminUI();
+        }
+
+        // --- NEW LOGIC: RESET TABLE WHEN DEPT CHANGES ---
+        function resetTableData() {
+            // Reset main table inputs to 0
+            document.querySelectorAll('#tableBody input').forEach(input => {
+                input.value = 0;
+                // Nếu đang ở col 0, reset readonly state luôn cho chắc (sẽ được fetchPrevDataSummary xử lý lại)
+                if (input.dataset.col == "0") {
+                    input.readOnly = false;
+                    input.classList.remove('input-readonly-custom');
+                }
+            });
+
+            // Reset extra stats to 0
+            document.querySelectorAll('#extraStatsLeft input, #extraStatsRight input').forEach(input => input.value = 0);
+
+            // Reset Ambulance specifically to 0 on dept change
+            const amb = document.getElementById('xeCuuThuong');
+            if (amb) amb.value = 0;
+
+            // Recalculate totals to update footer and dependent fields
+            calculateTotals();
+        }
+
+        function calculateTotals(src) {
+            const totals = Array(12).fill(0);
+            let totalChuyenVienNoi = 0; // Biến tính tổng chuyển viện nội (cột 5)
+
+            for (let r = 0; r < categories.length; r++) {
+                const getV = (c) => parseInt(document.querySelector(`input[data-row="${r}"][data-col="${c}"]`).value) || 0;
+
+                // Cột 5 là Chuyển tuyến Nội
+                totalChuyenVienNoi += getV(5);
+
+                // --- ĐÃ BỎ TỰ ĐỘNG TÍNH BN HIỆN CÓ (Cột 10) ---
+                // Chỉ lấy giá trị người dùng nhập vào để cộng tổng dọc
+                const hienCo = getV(10);
+
+                for (let c = 0; c < 12; c++) totals[c] += getV(c);
+            }
+            totals.forEach((v, i) => document.querySelector(`td[data-fcol="${i}"]`).innerText = v);
+
+            // CẬP NHẬT: Số lượt xe cứu thương luôn bằng Tổng Chuyển tuyến Nội (Cột 5)
+            const ambulanceInput = document.getElementById('xeCuuThuong');
+            if (ambulanceInput) {
+                ambulanceInput.value = totalChuyenVienNoi;
+            }
+        }
+
+        // --- TÍNH TOÁN PHẪU THUẬT ---
+        function calculateSurgeries(src) {
+            // Nếu người dùng nhập vào ptKhac thì không làm gì (nó readonly rồi)
+            // Tính toán ptKhac = phauThuat - ptCapCuu
+            const totalSurg = parseInt(document.getElementById('phauThuat').value) || 0;
+            const emergencySurg = parseInt(document.getElementById('ptCapCuu').value) || 0;
+
+            const otherSurg = totalSurg - emergencySurg;
+
+            // Không cho số âm
+            const finalVal = otherSurg > 0 ? otherSurg : 0;
+            document.getElementById('ptKhac').value = finalVal;
+        }
+
+        function updateDateString() {
+            const val = document.getElementById('reportDate').value;
+            if (val) {
+                const d = new Date(val); const yesterday = new Date(d); yesterday.setDate(d.getDate() - 1);
+                const fmt = (dt) => `${dt.getDate().toString().padStart(2, '0')}/${(dt.getMonth() + 1).toString().padStart(2, '0')}/${dt.getFullYear()}`;
+                document.getElementById('currentDateString').innerText = `Cầu Ngang, ngày ${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()}`;
+                document.getElementById('reportPeriodText').innerText = `TÌNH HÌNH KHÁM CHỮA BỆNH, TAI NẠN, NGỘ ĐỘC\n Từ 06 giờ ngày ${fmt(yesterday)} đến 06 giờ ngày ${fmt(d)}`;
+            }
+        }
+
+        function syncDepartment() {
+            document.getElementById('printDepartment').innerText = document.getElementById('department').value;
+            // Clear old data when switching department
+            resetTableData();
+        }
+
+        function updateSignatures() {
+            document.getElementById('printReporter').innerText = document.getElementById('reporter').value || "...";
+            document.getElementById('printLeaderName').innerText = document.getElementById('leader').value || "...";
+            const leader = document.getElementById('leader').value; let title = "Lãnh đạo trực đơn vị";
+            if (leader === "Dương Trung Hiếu") title = "GIÁM ĐỐC"; else if (["Lê Thị Hạnh Dung", "Trần Văn Bửu"].includes(leader)) title = "PHÓ GIÁM ĐỐC";
+            document.getElementById('printLeaderTitle').innerText = title;
+        }
+
+        // --- FIX QUAN TRỌNG: GỬI DỮ LIỆU KÈM SĐT ---
+        async function submitData() {
+            const r = document.getElementById('reporter').value.trim();
+            const l = document.getElementById('leader').value.trim();
+            const phone = document.getElementById('reporterPhone').value.trim(); // Lấy SĐT
+
+            if (!r || !l) return alert("Vui lòng điền đủ tên Người lập và Lãnh đạo!");
+            if (!phone) return alert("Vui lòng nhập Số điện thoại liên hệ!"); // Ràng buộc SĐT
+
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Đang gửi...';
+
+            const reportDateVal = document.getElementById('reportDate').value;
+
+            // THÊM SĐT VÀO MẢNG rowValues (sau người lập, trước lãnh đạo)
+            const rowValues = [new Date(), document.getElementById('department').value, reportDateVal, r, phone, l];
+
+            for (let rIdx = 0; rIdx < categories.length; rIdx++) { for (let cIdx = 0; cIdx < 12; cIdx++) rowValues.push(parseInt(document.querySelector(`input[data-row="${rIdx}"][data-col="${cIdx}"]`).value) || 0); }
+            extraStatsDef.forEach(s => rowValues.push(parseInt(document.getElementById(s.id).value) || 0));
+            rowValues.push(JSON.stringify(categories.map((_, r) => parseInt(document.querySelector(`input[data-row="${r}"][data-col="10"]`).value) || 0)));
+
+            try {
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'submit',
+                        khoa: document.getElementById('department').value,
+                        reportDate: reportDateVal,
+                        rowValues: rowValues
+                    })
+                });
+                alert("Đã gửi dữ liệu thành công lên hệ thống!");
+                location.reload();
+            }
+            catch (e) {
+                alert("Có lỗi khi gửi dữ liệu. Vui lòng thử lại!");
+                btn.disabled = false;
+                btn.innerHTML = "Gửi dữ liệu báo cáo <i class='fa-solid fa-paper-plane ml-1.5'></i>";
+            }
+        }
+
+        function fetchPrevDataSummary() {
+            const khoa = document.getElementById('department').value; const dv = document.getElementById('reportDate').value;
+            if (!dv) return;
+            const yesterdayStr = new Date(new Date(dv).setDate(new Date(dv).getDate() - 1)).toISOString().split('T')[0];
+            document.getElementById('prev-summary-text').innerText = "Tìm BN cũ ngày " + yesterdayStr + "...";
+            window.handlePrevSummaryResponse = function (res) {
+                if (res.result === "success" && res.detailsBNcu) {
+                    document.getElementById('prev-summary-text').innerHTML = `<b class='text-green-600'><i class="fa-solid fa-check-double mr-1"></i> Đã khớp BN cũ</b>`;
+                    res.detailsBNcu.forEach((val, idx) => {
+                        const input = document.querySelector(`input[data-row="${idx}"][data-col="0"]`);
+                        if (input) {
+                            input.value = val;
+                            input.classList.remove('bg-white');
+                            input.classList.add('input-readonly-custom'); // Thêm class xám
+                            input.readOnly = true; // KHÓA KHÔNG CHO SỬA
+                        }
+                    });
+                    calculateTotals();
+                } else {
+                    document.getElementById('prev-summary-text').innerHTML = `<span class="text-slate-500 italic">Ngày ${yesterdayStr} chưa báo cáo.</span>`;
+                    // Reset BN Cũ to 0 when not found AND UNLOCK
+                    for (let idx = 0; idx < categories.length; idx++) {
+                        const input = document.querySelector(`input[data-row="${idx}"][data-col="0"]`);
+                        if (input) {
+                            input.value = 0;
+                            input.classList.remove('input-readonly-custom'); // Bỏ class xám
+                            input.classList.add('bg-white');
+                            input.readOnly = false; // MỞ KHÓA CHO NHẬP
+                        }
+                    }
+                    calculateTotals();
+                }
+                const s = document.getElementById('jsonp-prev-summary'); if (s) s.remove();
+            };
+            const script = document.createElement('script'); script.id = 'jsonp-prev-summary';
+            script.src = `${GAS_URL}?action=get_prev_data&khoa=${encodeURIComponent(khoa)}&date=${yesterdayStr}&callback=handlePrevSummaryResponse`;
+            document.body.appendChild(script);
+        }
+
+        function resetAll() { if (confirm("Làm mới trang? Dữ liệu chưa lưu sẽ mất.")) location.reload(); }
+        window.onload = initApp;
+    </script>
+</body>
+
+</html>
